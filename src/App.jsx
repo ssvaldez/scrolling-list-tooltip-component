@@ -1,39 +1,50 @@
-import React, { useState, useEffect } from 'react';
-import logo from './logo.svg';
-import './App.css';
+import "./App.css";
+import { Tooltip } from "./components/Tooltip/Tooltip";
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 
-function App() {
-  // Create the count state.
-  const [count, setCount] = useState(0);
-  // Create the counter (+1 every second).
+export default function App() {
+  const [scrolling, setScrolling] = useState(false);
+  const [position, setPosition] = useState(0);
+  const containerRef = useRef(null);
+  const scrollingTimer = useRef();
+
+  const onScroll = useCallback(() => {
+    setPosition(containerRef.current.scrollTop)
+    setScrolling(true);
+    clearTimeout(scrollingTimer.current);
+    scrollingTimer.current = setTimeout(() => setScrolling(false), 200);
+  }, [scrollingTimer]);
+
+  const removeScrollListener = useCallback(() => {
+      if (containerRef.current) {
+          clearTimeout(scrollingTimer.current);
+          containerRef.current.removeEventListener('scroll', onScroll);
+      }
+  }, [scrollingTimer, onScroll, containerRef]);
+
   useEffect(() => {
-    const timer = setTimeout(() => setCount(count + 1), 1000);
-    return () => clearTimeout(timer);
-  }, [count, setCount]);
-  // Return the App component.
+      if (containerRef.current) {
+        containerRef.current.addEventListener('scroll', onScroll);
+      }
+      return () => {
+          removeScrollListener();
+      };
+  }, [onScroll, removeScrollListener, containerRef]);
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.jsx</code> and save to reload.
-        </p>
-        <p>
-          Page has been open for <code>{count}</code> seconds.
-        </p>
-        <p>
-          <a
-            className="App-link"
-            href="https://reactjs.org"
-            target="_blank"
-            rel="noopener noreferrer"
+      <div ref={containerRef} className="container">
+        {[...Array(26).keys()].map((index) => (
+          <Tooltip
+            parentPosition={position}
+            scrolling={scrolling}
+            key={`anchor+${index}`}
+            title={`tooltip-${index}`}
           >
-            Learn React
-          </a>
-        </p>
-      </header>
+            <div className="anchor">Anchor {index} </div>
+          </Tooltip>
+        ))}
+      </div>
     </div>
   );
 }
-
-export default App;
